@@ -1,0 +1,286 @@
+--高排放车辆  柴油货车淘汰统计
+
+WITH TASK AS  --type  1: 2018-2020年总任务量  2: 2019年总任务量   cllb 1:营运柴油货车  2:老旧燃气车  3:重中型
+ (SELECT XZQH,
+         SUM(CASE
+               WHEN TYPE = 1 THEN
+                TJSL
+               ELSE
+                0
+             END) TASK1,   --2018年到2020年所有车量类型的总任务量
+         SUM(CASE
+               WHEN TYPE = 1 AND CLLB = 1 THEN
+                TJSL
+               ELSE
+                0
+             END) TASK2,   --2018年到2020年营运柴油货车的总任务量
+         SUM(CASE
+               WHEN TYPE = 1 AND CLLB = 2 THEN
+                TJSL
+               ELSE
+                0
+             END) TASK3,   --2018年到2020年老旧燃气车的总任务量
+         SUM(CASE
+               WHEN TYPE = 2 THEN
+                TJSL
+               ELSE
+                0
+             END) TASK20181,  --2019年所有车辆类型的任务量
+         SUM(CASE
+               WHEN TYPE = 2 AND CLLB = 1 THEN
+                TJSL
+               ELSE
+                0
+             END) TASK20182,  --2019年营运柴油货车的任务量
+         SUM(CASE
+               WHEN TYPE = 2 AND CLLB = 2 THEN
+                TJSL
+               ELSE
+                0
+             END) TASK20183,  --2019年老旧燃气车的任务量
+         SUM(CASE
+               WHEN TYPE = 2 AND CLLB = 3 THEN
+                TJSL
+               ELSE
+                0
+             END) TASK22,    --2019年重中型车辆的任务量
+         SUM(CASE
+               WHEN TYPE = 3 AND CLLB = 1 THEN
+                TJSL
+               ELSE          --营运柴油货车任务量所占比例  共11个行政区划
+                0
+             END) BL2
+    FROM WH_VEHICLE_GPF_TASK  
+   GROUP BY XZQH),
+
+
+
+TOTAL0 AS
+ (SELECT DECODE(XZQH.LEV, 3, XZQH.SUPER, XZQH.XZQH) XZQH,
+         SUM(CASE
+               WHEN TJLB = 11 THEN
+                TJSL
+               ELSE
+                0
+             END) ZS1,     --高排放车辆总数
+         SUM(CASE
+               WHEN TJLB = 12 THEN
+                TJSL
+               ELSE
+                0 
+             END) ZS2,      --高排放车辆重中型车辆总数
+         SUM(CASE
+               WHEN TJLB = 13 THEN
+                TJSL
+               ELSE
+                0
+             END) ZS3       --高排放车辆 老旧燃气车辆总数
+    FROM DM0_VEH_STAT_LOGOUT_GPF_TOTAL T, WH_XZQH XZQH
+   WHERE T.XZQH = XZQH.XZQH
+   GROUP BY DECODE(XZQH.LEV, 3, XZQH.SUPER, XZQH.XZQH)),  --11个行政区划
+
+
+
+TOTAL1 AS
+ (SELECT XZQH,
+         SUM(CASE
+               WHEN TJLB = 1 THEN
+                TJSL
+               ELSE
+                0
+             END) ZWC1,    --高排放车辆注销总数
+         SUM(CASE
+               WHEN TJLB = 2 THEN
+                TJSL
+               ELSE
+                0
+             END) ZWC2,   --高排放车辆重中型车辆注销总数
+         SUM(CASE
+               WHEN TJLB = 3 THEN
+                TJSL
+               ELSE
+                0
+             END) ZWC3,   --高排放车辆老旧燃气车辆注销总数
+         SUM(CASE
+               WHEN TJLB = 1 AND ZXYY = 'A' THEN
+                TJSL
+               ELSE
+                0
+             END) ZCJ1,   --高排放车辆注销车辆中 注销原因是报废的
+         SUM(CASE
+               WHEN TJLB = 2 AND ZXYY = 'A' THEN
+                TJSL
+               ELSE
+                0
+             END) ZCJ2,   --高排放车辆 重中型注销的车辆中 注销原因是报废的
+         SUM(CASE
+               WHEN TJLB = 3 AND ZXYY = 'A' THEN
+                TJSL
+               ELSE
+                0
+             END) ZCJ3    --高排放车辆 老旧燃气注销的车辆中 注销原因是报废的
+    FROM DM0_VEH_STAT_LOGOUT_GPF
+   WHERE TJRQ BETWEEN 20180101 AND
+         TO_CHAR(LAST_DAY(TO_DATE(201909, 'YYYYMM')) + 1, 'YYYYMMDD')
+     AND JGPD = 1
+   GROUP BY XZQH),
+
+
+
+
+TOTAL AS
+ (SELECT TOTAL1.*, ZS1, ZS2, ZS3
+    FROM TOTAL0, TOTAL1
+   WHERE TOTAL0.XZQH = TOTAL1.XZQH),
+
+
+               
+T2018 AS    --此段代码功能重复
+ (SELECT DECODE(XZQH.LEV, 3, XZQH.SUPER, XZQH.XZQH) XZQH,
+         SUM(CASE
+               WHEN TJLB = 1 THEN
+                TJSL
+               ELSE
+                0
+             END) WC1,
+         SUM(CASE
+               WHEN TJLB = 2 THEN
+                TJSL
+               ELSE
+                0
+             END) WC2,
+         SUM(CASE
+               WHEN TJLB = 3 THEN
+                TJSL
+               ELSE
+                0
+             END) WC3,
+         SUM(CASE
+               WHEN TJLB = 1 AND ZXYY = 'A' THEN
+                TJSL
+               ELSE
+                0
+             END) CJ1,
+         SUM(CASE
+               WHEN TJLB = 2 AND ZXYY = 'A' THEN
+                TJSL
+               ELSE
+                0
+             END) CJ2,
+         SUM(CASE
+               WHEN TJLB = 3 AND ZXYY = 'A' THEN
+                TJSL
+               ELSE
+                0
+             END) CJ3
+    FROM DM0_VEH_STAT_LOGOUT_GPF T, WH_XZQH XZQH
+   WHERE T.XZQH = XZQH.XZQH
+     AND TJRQ BETWEEN 20180101 AND
+         TO_CHAR(LAST_DAY(TO_DATE(201909, 'YYYYMM')) + 1, 'YYYYMMDD')
+     AND JGPD = 1
+   GROUP BY DECODE(XZQH.LEV, 3, XZQH.SUPER, XZQH.XZQH)),
+
+
+
+XZQH AS
+ (SELECT XZQH, NAME
+    FROM WH_XZQH
+   START WITH SUPER = 610000
+  CONNECT BY PRIOR XZQH = SUPER
+         AND LEV = 2),
+         
+         
+         
+--ZXYY A:报废  B:灭失  C: 不在境内使用  D: 假资料领取牌证  E: 强制注销 F: 退车
+A AS
+ (SELECT XZQH.NAME,
+         XZQH.XZQH,
+         NVL(TASK1, 0) TASK1,  --2018年到2020年所有车量类型的总任务量
+         NVL(TASK2, 0) TASK2,  --2018年到2020年营运柴油货车的总任务量
+         NVL(TASK3, 0) TASK3,  --2018年到2020年老旧燃气车的总任务量
+         TASK22,               --2019年重中型车辆的任务量
+         NVL(BL2, 0) BL2,      --营运柴油货车任务量所占比例
+         NVL(TASK20181, 0) TASK20181,     --2019年所有车辆类型的任务量
+         NVL(TASK20182, 0) TASK20182,     --2019年营运柴油货车的任务量
+         NVL(TASK20183, 0) TASK20183,     --2019年老旧燃气车的任务量
+         NVL(ZS1, 0) ZS1,     --高排放车辆总数       
+         NVL(ZS2, 0) ZS2,     --高排放车辆重中型车辆总数
+         NVL(ZS3, 0) ZS3,     --高排放车辆 老旧燃气车辆总数
+         NVL(ZWC1, 0) ZWC1,   --高排放车辆注销总数
+         NVL(ZWC2, 0) ZWC2,   --高排放车辆重中型车辆注销总数
+         NVL(ZWC3, 0) ZWC3,   --高排放车辆老旧燃气车辆注销总数
+         NVL(ZCJ1, 0) ZCJ1,   --高排放车辆注销车辆中 注销原因是报废的   
+         NVL(ZCJ2, 0) ZCJ2,   --高排放车辆 重中型注销的车辆中 注销原因是报废的
+         NVL(ZCJ3, 0) ZCJ3,   --高排放车辆 老旧燃气注销的车辆中 注销原因是报废的
+         NVL(WC1, 0) WC1,
+         NVL(WC2, 0) WC2,
+         NVL(WC3, 0) WC3,
+         NVL(CJ1, 0) CJ1,
+         NVL(CJ2, 0) CJ2,
+         NVL(CJ3, 0) CJ3
+    FROM XZQH, TASK, TOTAL, T2018
+   WHERE XZQH.XZQH = TASK.XZQH(+)
+     AND XZQH.XZQH = TOTAL.XZQH(+)
+     AND XZQH.XZQH = T2018.XZQH(+)
+     AND XZQH.XZQH IN (SELECT XZQH
+                         FROM WH_XZQH
+                        START WITH XZQH = 610000
+                       CONNECT BY PRIOR XZQH = SUPER)
+   ORDER BY XZQH.XZQH),
+
+B AS
+ (SELECT ROWNUM RN, A.*
+    FROM A
+  UNION ALL
+  SELECT COUNT(1) + 1,
+         '总计',
+         -1,
+         SUM(TASK1),
+         SUM(TASK2),
+         SUM(TASK3),
+         SUM(TASK22),
+         AVG(BL2),
+         SUM(TASK20181),
+         SUM(TASK20182),
+         SUM(TASK20183),
+         SUM(ZS1),
+         SUM(ZS2),
+         SUM(ZS3),
+         SUM(ZWC1),
+         SUM(ZWC2),
+         SUM(ZWC3),
+         SUM(ZCJ1),
+         SUM(ZCJ2),
+         SUM(ZCJ3),
+         SUM(WC1),
+         SUM(WC2),
+         SUM(WC3),
+         SUM(CJ1),
+         SUM(CJ2),
+         SUM(CJ3)
+    FROM A)
+SELECT RN, --序号 
+       XZQH,
+       NAME, --地市 
+       ZS1, --保有总量 
+       ZS2, --中重型保有量 
+       TASK2, --2018年到2020年营运柴油货车的总任务量
+       ZWC1, --总完成量 
+       TO_CHAR(ROUND(100 * DECODE(TASK2, 0, 0, ZWC1 / TASK2), 2),'FM9990.00') || '%' ZWCL, --"总完成率" 
+       TO_CHAR(ROUND(100 * DECODE(ZWC1, 0, 0, ZCJ1 / ZWC1), 2), 'FM9990.00') || '%' ZCJL, --"总拆解率" 
+       TO_CHAR(ROUND(100 * DECODE(ZS2, 0, 0, ZWC2 / ZS2), 2), 'FM9990.00') || '%' ZWCL2, --中重型注销比例   总注销/保有量
+       TO_CHAR(ROUND(100 * DECODE(ZWC2, 0, 0, ZCJ2 / ZWC2), 2), 'FM9990.00') || '%' ZCJL2, --中重型拆解率 
+       TASK20182, -- 2019年柴油货车淘汰任务量 
+       ROUND(TASK22, 0) TASK22, --2019年重中型车辆的任务量 
+       TO_CHAR(100 * BL2, 'FM9990') || '%' BL2, --中重型任务量-比例 (柴油货车任务量比例)  -待修改
+       --TO_CHAR(ROUND(100 * DECODE(TASK22, 0, 0, TASK22 / TASK20182), 2), 'FM9990.00') || '%' BL2, --重中型货车任务量所占比例
+       WC1, --任务完成总量  --待修改
+       --ZWC2, 柴油货车淘汰完成量
+       --TO_CHAR(ROUND(100 * DECODE(TASK20182, 0, 0, ZWC2 / TASK20182), 2),'FM9990.00') || '%' WCL, --柴油货车淘汰完成比例
+       TO_CHAR(ROUND(100 * DECODE(TASK20182, 0, 0, WC1 / TASK20182), 2),'FM9990.00') || '%' WCL, --完成比例 --待修改
+       TO_CHAR(ROUND(100 * DECODE(WC1, 0, 0, CJ1 / WC1), 2), 'FM9990.00') || '%' CJL, --2018总拆解率 WC2,  --待修改
+       --TO_CHAR(ROUND(100 * DECODE(ZWC1, 0, 0, ZCJ1 / ZWC1), 2), 'FM9990.00') || '%' CJL  --2019年总拆解率
+       
+       TO_CHAR(ROUND(100 * DECODE(TASK22, 0, 0, WC2 / TASK22), 2),'FM9990.00') || '%' WCL2, --中重型完成比例 
+       ROUND(100 * DECODE(WC2, 0, 0, CJ2 / WC2), 2) || '%' CJL2 --中重型拆解率
+  FROM B;
